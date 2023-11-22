@@ -19,7 +19,7 @@ The application serves videos stored in the `static/videos` directory, generatin
 3. Install required dependencies using the following command:
 
     ```bash
-    pip install flask opencv-python-headless
+    pip install flask opencv
     ```
 
 4. Run the application with `python app.py`.
