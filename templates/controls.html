@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Advanced Parental Controls and Dark Theme</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #2c3e50; /* Dark background color */
+            color: #ecf0f1; /* Light text color */
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #34495e; /* Slightly lighter background */
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #ecf0f1; /* Light title color */
+        }
+        .control-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .control-label {
+            flex: 1;
+            text-align: left;
+            color: #ecf0f1; /* Light text color */
+            font-weight: 600;
+        }
+        .control-switch {
+            flex: 1;
+            text-align: right;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #27ae60; /* Green background for "On" */
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #27ae60;
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        input[type="time"] {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px;
+            text-align: center;
+            width: 80px;
+            background-color: #34495e; /* Background color for time input */
+            color: #ecf0f1; /* Text color for time input */
+        }
+        .time-range {
+            display: flex;
+            align-items: center;
+        }
+        .control-button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            text-align: center;
+            background-color: #2980b9; /* Blue button background */
+            color: #ecf0f1; /* Light text color for button */
+            text-decoration: none;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Parental Controls</h1>
+
+        <div class="control-group">
+            <div class="control-label">Enable Play Time Restriction</div>
+            <div class="control-switch">
+                <label class="switch">
+                    <input type="checkbox" id="playTimeSwitch" {% if settings.play_time_enabled %}checked{% endif %}>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">Set Play Time Range</div>
+            <div class="control-switch time-range">
+                <input type="time" id="playStartTime" value="{{ settings.play_start_time }}">
+                <span>to</span>
+                <input type="time" id="playEndTime" value="{{ settings.play_end_time }}">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">Enable Dark Color Theme Mode</div>
+            <div class="control-switch">
+                <label class="switch">
+                    <input type="checkbox" id="nightModeSwitch" {% if settings.night_mode_enabled %}checked{% endif %}>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="control-label">Not working</div>
+            <div class="control-switch time-range">
+                <input type="time" id="nightStartTime" value="{{ settings.night_start_time }}">
+                <span>to</span>
+                <input type="time" id="nightEndTime" value="{{ settings.night_end_time }}">
+            </div>
+        </div>
+
+        <a href="#" class="control-button" onclick="applySettings()">Apply Settings</a>
+    </div>
+
+    <script>
+        function applySettings() {
+            const playTimeEnabled = document.getElementById("playTimeSwitch").checked;
+            const playStartTime = document.getElementById("playStartTime").value;
+            const playEndTime = document.getElementById("playEndTime").value;
+            const nightModeEnabled = document.getElementById("nightModeSwitch").checked;
+            const nightStartTime = document.getElementById("nightStartTime").value;
+            const nightEndTime = document.getElementById("nightEndTime").value;
+
+            // Send settings to the server
+            fetch('/apply_settings', {
+                method: 'POST',
+                body: JSON.stringify({
+                    play_time_enabled: playTimeEnabled,
+                    play_start_time: playStartTime,
+                    play_end_time: playEndTime,
+                    night_mode_enabled: nightModeEnabled,
+                    night_start_time: nightStartTime,
+                    night_end_time: nightEndTime
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Settings saved successfully.");
+                } else {
+                    console.error("Failed to save settings.");
+                }
+            });
+        }
+    </script>
+</body>
+</html>

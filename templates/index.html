@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    margin: 0;
+    overflow: hidden;
+}
+
+#videoContainer {
+    width: 100%;
+    height: 80vh;
+}
+
+#videoPlayer {
+    width: 100%;
+    height: 100%;
+    border-radius: .5%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    border-bottom: 3px solid #111c27;
+    border-top: 3px solid #111c27;
+}
+
+#videoPlayerContainer {
+    display: flex;
+    flex-direction: row-reverse;
+    height: 100%;
+}
+
+#recommendedVideos {
+    overflow: auto;
+    width: 20vw;
+    height: 80vh;
+    border-right: 3px solid #111c27;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    background-color: #35516e;
+    border-bottom: 3px solid #111c27;
+    border-top: 3px solid #111c27;
+    border-radius: 2%;
+    transition: background-color 3s ease-in;
+}
+
+#videoList {
+    padding: 8px;
+    margin-top: 5px;
+}
+
+#recommendedVideos img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border-radius: 7%;
+    border: 2px solid #111c27;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 1s ease-in-out;
+}
+
+#recommendedVideos img:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#recommendedVideos img::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 5s ease-in-out;
+}
+
+#recommendedVideos img:hover::after {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive design for smaller screens */
+@media screen and (max-width: 768px) {
+    #recommendedVideos {
+        width: 30vw;
+    }
+}
+    </style>
+</head>
+<body>
+    <div id="videoContainer">
+        <div id="videoPlayerContainer">
+            <video id="videoPlayer" controls>
+                <source src="" type="video/mp4">
+            </video>
+            <div id="recommendedVideos">
+                <div id="videoList">
+                    <!-- Recommended videos here -->
+                    {% for video in videos %}
+                        <img src="{{ url_for('static', filename=video.thumbnail_path) }}"
+                            alt="{{ video.video_path }}"
+                            data-src="{{ video.video_path }}"
+                            onclick="changeVideo('{{ video.video_path }}')">
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Define constant variables
+    const playTimeEnabled = {{ settings.play_time_enabled|tojson|safe }};
+    const playStartTime = "{{ settings.play_start_time }}";
+    const playEndTime = "{{ settings.play_end_time }}";
+    const videoPlayer = document.getElementById("videoPlayer");
+    const recommendedVideos = document.getElementById("recommendedVideos");
+    const videoList = document.querySelectorAll("#videoList img");
+
+    // Function to auto-load the first video
+    function autoLoadFirstVideo() {
+        if (videoList.length > 0) {
+            const firstVideo = videoList[0].getAttribute("data-src");
+            videoPlayer.src = firstVideo;
+            videoPlayer.play();
+            recommendedVideos.style.display = "none";
+        }
+    }
+
+    // Function to update the video display based on the play state
+    function updateVideoDisplay() {
+        recommendedVideos.style.display = (videoPlayer.paused && isPlayTimeAllowed()) ? "block" : "none";
+    }
+
+    // Event listeners for updating the video display
+    videoPlayer.addEventListener("play", updateVideoDisplay);
+    videoPlayer.addEventListener("pause", updateVideoDisplay);
+
+    // Event listener for when the video ends
+    videoPlayer.addEventListener("ended", function() {
+        if (isPlayTimeAllowed()) {
+            recommendedVideos.style.display = "block";
+        }
+    });
+
+    // Function to change the video and check if play time is allowed
+    function changeVideo(src) {
+        if (isPlayTimeAllowed()) {
+            videoPlayer.src = src;
+            videoPlayer.play();
+            recommendedVideos.style.display = "none";
+        } else {
+            alert("Play time is restricted.");
+        }
+    }
+
+    // Function to check if play time is allowed
+    function isPlayTimeAllowed() {
+        if (!playTimeEnabled) {
+            return true;
+        }
+
+        const currentTime = new Date();
+        const playStartTime = new Date(currentTime.toDateString() + " " + playStartTime);
+        const playEndTime = new Date(currentTime.toDateString() + " " + playEndTime);
+
+        if (playStartTime > playEndTime) {
+            return !(currentTime < playStartTime && currentTime > playEndTime);
+        } else {
+            return currentTime >= playStartTime && currentTime <= playEndTime;
+        }
+    }
+
+    // Function to update settings and refresh the page if changed
+    function updateSettingsAndRefresh() {
+        fetch('/get_settings')
+            .then(response => response.json())
+            .then(data => {
+                // Check if the settings have changed
+                if (
+                    data.play_time_enabled !== playTimeEnabled ||
+                    data.play_start_time !== playStartTime ||
+                    data.play_end_time !== playEndTime
+                ) {
+                    // Reload the page
+                    location.reload();
+                }
+            });
+    }
+
+    // Periodically check for changes and refresh the page
+    setInterval(updateSettingsAndRefresh, 120000);
+
+    // Check if play time is allowed and auto-load first video
+    if (isPlayTimeAllowed()) {
+        autoLoadFirstVideo();
+    }
+</script>
+</body>
+</html>
