@@ -76,14 +76,14 @@ def controls():
     return render_template('controls.html', settings=settings)
 
 # Route to handle form submissions for settings
+
 @app.route('/apply_settings', methods=['POST'])
 def apply_settings():
     data = request.get_json()
-    updated_settings = data['settings']
 
     # Save the updated settings to the JSON file
     with open(settings_file, 'w') as file:
-        json.dump(updated_settings, file)
+        json.dump(data, file)
 
     return jsonify({'message': 'Settings saved successfully'})
 

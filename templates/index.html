@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
 body {
     font-family: 'Arial', sans-serif;
@@ -8,6 +9,7 @@ body {
     color: #ecf0f1;
     margin: 0;
     overflow: hidden;
+    font-size: 18px;
 }
 
 #videoContainer {
@@ -41,6 +43,20 @@ body {
     border-top: 3px solid #111c27;
     border-radius: 2%;
     transition: background-color 3s ease-in;
+}
+
+#toggleRecommendations {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #2980b9;
+    color: #ecf0f1;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 1rem;
+    z-index: 1000;
 }
 
 #videoList {
@@ -82,15 +98,32 @@ body {
     background-color: rgba(0, 0, 0, 0.2);
 }
 
-/* Responsive design for smaller screens */
+/* Responsive design for tablets and smaller screens */
 @media screen and (max-width: 768px) {
+    #videoPlayerContainer {
+        flex-direction: column-reverse;
+    }
     #recommendedVideos {
-        width: 30vw;
+        width: 100%;
+        height: 25vh;
+    }
+    #toggleRecommendations {
+        display: block;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    body {
+        font-size: 16px;
+    }
+    #recommendedVideos {
+        height: 30vh;
     }
 }
     </style>
 </head>
 <body>
+    <button id="toggleRecommendations">Show Videos</button>
     <div id="videoContainer">
         <div id="videoPlayerContainer">
             <video id="videoPlayer" controls>
@@ -111,28 +144,44 @@ body {
     </div>
 
     <script>
-    // Define constant variables
-    const playTimeEnabled = {{ settings.play_time_enabled|tojson|safe }};
-    const playStartTime = "{{ settings.play_start_time }}";
-    const playEndTime = "{{ settings.play_end_time }}";
-    const videoPlayer = document.getElementById("videoPlayer");
-    const recommendedVideos = document.getElementById("recommendedVideos");
-    const videoList = document.querySelectorAll("#videoList img");
+    // Define constant variables for settings
+    const playTimeEnabledSetting = {{ settings.play_time_enabled|tojson|safe }};
+    const playStartTimeSetting = "{{ settings.play_start_time }}";
+    const playEndTimeSetting = "{{ settings.play_end_time }}";
+const videoPlayer = document.getElementById("videoPlayer");
+const recommendedVideos = document.getElementById("recommendedVideos");
+const videoList = document.querySelectorAll("#videoList img");
+const toggleButton = document.getElementById("toggleRecommendations");
+
+// Hide recommendation panel on load for small screens
+if (window.innerWidth <= 768) {
+    recommendedVideos.style.display = "none";
+    toggleButton.textContent = "Show Videos";
+}
 
     // Function to auto-load the first video
-    function autoLoadFirstVideo() {
-        if (videoList.length > 0) {
-            const firstVideo = videoList[0].getAttribute("data-src");
-            videoPlayer.src = firstVideo;
-            videoPlayer.play();
-            recommendedVideos.style.display = "none";
+function autoLoadFirstVideo() {
+    if (videoList.length > 0) {
+        const firstVideo = videoList[0].getAttribute("data-src");
+        videoPlayer.src = firstVideo;
+        videoPlayer.play();
+        recommendedVideos.style.display = window.innerWidth <= 768 ? "none" : "block";
+        if (window.innerWidth <= 768) {
+            toggleButton.textContent = "Show Videos";
         }
     }
+}
 
     // Function to update the video display based on the play state
-    function updateVideoDisplay() {
-        recommendedVideos.style.display = (videoPlayer.paused && isPlayTimeAllowed()) ? "block" : "none";
+function updateVideoDisplay() {
+    if (videoPlayer.paused && isPlayTimeAllowed()) {
+        recommendedVideos.style.display = "block";
+        toggleButton.textContent = "Hide Videos";
+    } else {
+        recommendedVideos.style.display = "none";
+        toggleButton.textContent = "Show Videos";
     }
+}
 
     // Event listeners for updating the video display
     videoPlayer.addEventListener("play", updateVideoDisplay);
@@ -142,6 +191,18 @@ body {
     videoPlayer.addEventListener("ended", function() {
         if (isPlayTimeAllowed()) {
             recommendedVideos.style.display = "block";
+            toggleButton.textContent = "Hide Videos";
+        }
+    });
+
+    // Toggle recommended video panel on small screens
+    toggleButton.addEventListener("click", function() {
+        if (recommendedVideos.style.display === "none" || recommendedVideos.style.display === "") {
+            recommendedVideos.style.display = "block";
+            toggleButton.textContent = "Hide Videos";
+        } else {
+            recommendedVideos.style.display = "none";
+            toggleButton.textContent = "Show Videos";
         }
     });
 
@@ -151,27 +212,28 @@ body {
             videoPlayer.src = src;
             videoPlayer.play();
             recommendedVideos.style.display = "none";
+            toggleButton.textContent = "Show Videos";
         } else {
             alert("Play time is restricted.");
         }
     }
 
     // Function to check if play time is allowed
-    function isPlayTimeAllowed() {
-        if (!playTimeEnabled) {
-            return true;
-        }
-
-        const currentTime = new Date();
-        const playStartTime = new Date(currentTime.toDateString() + " " + playStartTime);
-        const playEndTime = new Date(currentTime.toDateString() + " " + playEndTime);
-
-        if (playStartTime > playEndTime) {
-            return !(currentTime < playStartTime && currentTime > playEndTime);
-        } else {
-            return currentTime >= playStartTime && currentTime <= playEndTime;
-        }
+function isPlayTimeAllowed() {
+    if (!playTimeEnabledSetting) {
+        return true;
     }
+
+    const currentTime = new Date();
+    const start = new Date(currentTime.toDateString() + " " + playStartTimeSetting);
+    const end = new Date(currentTime.toDateString() + " " + playEndTimeSetting);
+
+    if (start > end) {
+        return !(currentTime < start && currentTime > end);
+    } else {
+        return currentTime >= start && currentTime <= end;
+    }
+}
 
     // Function to update settings and refresh the page if changed
     function updateSettingsAndRefresh() {
@@ -180,9 +242,9 @@ body {
             .then(data => {
                 // Check if the settings have changed
                 if (
-                    data.play_time_enabled !== playTimeEnabled ||
-                    data.play_start_time !== playStartTime ||
-                    data.play_end_time !== playEndTime
+                    data.play_time_enabled !== playTimeEnabledSetting ||
+                    data.play_start_time !== playStartTimeSetting ||
+                    data.play_end_time !== playEndTimeSetting
                 ) {
                     // Reload the page
                     location.reload();

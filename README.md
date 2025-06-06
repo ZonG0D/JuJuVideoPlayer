@@ -11,6 +11,7 @@ The application serves videos stored in the `static/videos` directory, generatin
 - **Video Playback**: Allows users to watch videos from the provided directory.
 - **Thumbnails**: Automatically generates thumbnails for videos in the `static/videos` folder.
 - **Settings Management**: Provides settings for configuring video playback times and enabling/disabling night mode.
+- **Tablet Friendly**: Responsive layout with a collapsible recommendation panel for better use on Kindle Fire and other tablets.
 
 ## Installation
 
