@@ -79,7 +79,13 @@ def controls():
 @app.route('/apply_settings', methods=['POST'])
 def apply_settings():
     data = request.get_json()
-    updated_settings = data['settings']
+
+    # Frontend may send either the settings dictionary directly or wrapped
+    # inside a "settings" key. Handle both cases for robustness.
+    if isinstance(data, dict) and 'settings' in data:
+        updated_settings = data['settings']
+    else:
+        updated_settings = data
 
     # Save the updated settings to the JSON file
     with open(settings_file, 'w') as file:
