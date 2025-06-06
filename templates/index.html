@@ -144,10 +144,10 @@ body {
     </div>
 
     <script>
-    // Define constant variables
-    const playTimeEnabled = {{ settings.play_time_enabled|tojson|safe }};
-    const playStartTime = "{{ settings.play_start_time }}";
-    const playEndTime = "{{ settings.play_end_time }}";
+    // Define constant variables for settings
+    const playTimeEnabledSetting = {{ settings.play_time_enabled|tojson|safe }};
+    const playStartTimeSetting = "{{ settings.play_start_time }}";
+    const playEndTimeSetting = "{{ settings.play_end_time }}";
 const videoPlayer = document.getElementById("videoPlayer");
 const recommendedVideos = document.getElementById("recommendedVideos");
 const videoList = document.querySelectorAll("#videoList img");
@@ -219,21 +219,21 @@ function updateVideoDisplay() {
     }
 
     // Function to check if play time is allowed
-    function isPlayTimeAllowed() {
-        if (!playTimeEnabled) {
-            return true;
-        }
-
-        const currentTime = new Date();
-        const playStartTime = new Date(currentTime.toDateString() + " " + playStartTime);
-        const playEndTime = new Date(currentTime.toDateString() + " " + playEndTime);
-
-        if (playStartTime > playEndTime) {
-            return !(currentTime < playStartTime && currentTime > playEndTime);
-        } else {
-            return currentTime >= playStartTime && currentTime <= playEndTime;
-        }
+function isPlayTimeAllowed() {
+    if (!playTimeEnabledSetting) {
+        return true;
     }
+
+    const currentTime = new Date();
+    const start = new Date(currentTime.toDateString() + " " + playStartTimeSetting);
+    const end = new Date(currentTime.toDateString() + " " + playEndTimeSetting);
+
+    if (start > end) {
+        return !(currentTime < start && currentTime > end);
+    } else {
+        return currentTime >= start && currentTime <= end;
+    }
+}
 
     // Function to update settings and refresh the page if changed
     function updateSettingsAndRefresh() {
@@ -242,9 +242,9 @@ function updateVideoDisplay() {
             .then(data => {
                 // Check if the settings have changed
                 if (
-                    data.play_time_enabled !== playTimeEnabled ||
-                    data.play_start_time !== playStartTime ||
-                    data.play_end_time !== playEndTime
+                    data.play_time_enabled !== playTimeEnabledSetting ||
+                    data.play_start_time !== playStartTimeSetting ||
+                    data.play_end_time !== playEndTimeSetting
                 ) {
                     // Reload the page
                     location.reload();
