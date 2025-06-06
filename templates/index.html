@@ -120,20 +120,30 @@ body {
         height: 30vh;
     }
 }
+
+/* Kindle Fire and Silk browser adjustments */
+@media screen and (min-device-width: 600px) and (max-device-width: 1280px) {
+    body {
+        font-size: 20px;
+    }
+    #recommendedVideos {
+        width: 25vw;
+    }
+}
     </style>
 </head>
 <body>
     <button id="toggleRecommendations">Show Videos</button>
     <div id="videoContainer">
         <div id="videoPlayerContainer">
-            <video id="videoPlayer" controls>
+            <video id="videoPlayer" controls preload="auto">
                 <source src="" type="video/mp4">
             </video>
             <div id="recommendedVideos">
                 <div id="videoList">
                     <!-- Recommended videos here -->
                     {% for video in videos %}
-                        <img src="{{ url_for('static', filename=video.thumbnail_path) }}"
+                        <img loading="lazy" src="{{ url_for('static', filename=video.thumbnail_path) }}"
                             alt="{{ video.video_path }}"
                             data-src="{{ video.video_path }}"
                             onclick="changeVideo('{{ video.video_path }}')">
@@ -152,6 +162,29 @@ const videoPlayer = document.getElementById("videoPlayer");
 const recommendedVideos = document.getElementById("recommendedVideos");
 const videoList = document.querySelectorAll("#videoList img");
 const toggleButton = document.getElementById("toggleRecommendations");
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+    } catch (err) {
+        console.log('Wake lock failed:', err);
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
+
+if ('wakeLock' in navigator) {
+    videoPlayer.addEventListener('play', requestWakeLock);
+    videoPlayer.addEventListener('pause', releaseWakeLock);
+    videoPlayer.addEventListener('ended', releaseWakeLock);
+}
 
 // Hide recommendation panel on load for small screens
 if (window.innerWidth <= 768) {
